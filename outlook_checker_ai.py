@@ -471,6 +471,8 @@ class OutlookCheckerAI:
         self.btn_toggle.pack(side="right", padx=4)
         self._make_bar_btn(right, "↻", "#6070A0", C["ico_btn_hov"],
                            self._manual_refresh).pack(side="right", padx=4)
+        self._make_bar_btn(right, "⌫", "#6070A0", "#3A1A1A",
+                           self._clear_all).pack(side="right", padx=4)
 
         self.root.after(100, lambda: _bind_drag_recursive(
             bar, self._drag_start, self._drag_move))
@@ -498,7 +500,7 @@ class OutlookCheckerAI:
 
         sub = tk.Frame(self.status_area, bg=C["subheader"])
         sub.pack(fill="x")
-        self.lbl_next = tk.Label(sub, text="次回自動更新: 15分後", font=("Yu Gothic UI", 9),
+        self.lbl_next = tk.Label(sub, text="次回自動更新: --:--", font=("Yu Gothic UI", 9),
                                   bg=C["subheader"], fg=C["text_muted"])
         self.lbl_next.pack(side="left", padx=16, pady=6)
 
@@ -784,7 +786,8 @@ class OutlookCheckerAI:
 
         now_str = datetime.datetime.now().strftime("%H:%M 更新")
         self.lbl_updated.config(text=now_str)
-        self.lbl_next.config(text="次回自動更新: 15分後")
+        next_time = (datetime.datetime.now() + datetime.timedelta(milliseconds=REFRESH_INTERVAL_MS)).strftime("%H:%M")
+        self.lbl_next.config(text=f"次回自動更新: {next_time}")
 
         pending = sum(1 for e in emails if e["is_customer"] is None)
         if pending > 0:
@@ -821,6 +824,26 @@ class OutlookCheckerAI:
         if self._refresh_job:
             self.root.after_cancel(self._refresh_job)
         self._refresh()
+
+    def _clear_all(self):
+        if not messagebox.askyesno("全クリア確認",
+                                    "AIキャッシュとメール一覧をすべて消去します。\n次回更新時に全件再判定されます。\n\nよろしいですか？",
+                                    icon="warning"):
+            return
+        # メモリとファイル両方クリア
+        _ai_cache.clear()
+        try:
+            import os
+            if os.path.exists(CACHE_PATH):
+                os.remove(CACHE_PATH)
+        except Exception:
+            pass
+        self.emails = []
+        self.prev_customer_count = -1
+        self._update_counts()
+        self._render_emails()
+        self.lbl_ai_status.config(text="🤖 キャッシュ消去済み")
+        self._manual_refresh()
 
 
 def main():
