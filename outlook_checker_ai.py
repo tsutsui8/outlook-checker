@@ -37,11 +37,13 @@ try:
 except ImportError:
     HAS_ANTHROPIC = False
 
-# APIキー設定ファイル
+# 設定・キャッシュファイル
 CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".outlook_checker_config.json")
+CACHE_PATH  = os.path.join(os.path.expanduser("~"), ".outlook_checker_cache.json")
 
 REFRESH_INTERVAL_MS = 15 * 60 * 1000
-COMPACT_W, COMPACT_H = 560, 114
+COMPACT_W = 700
+EXPAND_EXTRA_H = 552
 EXPAND_W,  EXPAND_H  = 920, 740
 
 C = {
@@ -105,15 +107,42 @@ def save_api_key(key: str):
 
 # ------------------------------------------------------------------ AI判定
 
-_ai_cache: dict = {}   # entry_id → bool のキャッシュ
+_ai_cache: dict = {}   # キャッシュ（メモリ）
+
+def _load_cache():
+    try:
+        with open(CACHE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def _save_cache():
+    try:
+        with open(CACHE_PATH, "w", encoding="utf-8") as f:
+            json.dump(_ai_cache, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+# 起動時にキャッシュをファイルから読み込む
+_ai_cache.update(_load_cache())
 
 
-def classify_with_ai(sender: str, subject_hint: str, body: str, api_key: str) -> bool:
+def _cache_key(email: dict) -> str:
+    """メールの安定したキャッシュキーを返す（entry_id優先）"""
+    if email.get("entry_id"):
+        return f"id:{email['entry_id']}"
+    return f"{email['sender']}:{email.get('body', email['preview'])[:80]}"
+
+
+def classify_with_ai(email: dict, api_key: str) -> bool:
     """Claude APIでお客様メールか判定。True=お客様、False=その他"""
+    sender = email["sender"]
+    body   = email.get("body", email["preview"])
+
     if not HAS_ANTHROPIC or not api_key:
         return _keyword_fallback(body)
 
-    cache_key = f"{sender}:{body[:80]}"
+    cache_key = _cache_key(email)
     if cache_key in _ai_cache:
         return _ai_cache[cache_key]
 
@@ -138,9 +167,11 @@ def classify_with_ai(sender: str, subject_hint: str, body: str, api_key: str) ->
         )
         result = "YES" in message.content[0].text.upper()
         _ai_cache[cache_key] = result
+        _save_cache()
         return result
     except Exception:
         return _keyword_fallback(body)
+
 
 
 BLACKLIST_KEYWORDS = [
@@ -158,6 +189,9 @@ def _keyword_fallback(body: str) -> bool:
         if kw in body:
             return False
     return True
+
+def _cache_size_info() -> str:
+    return f"{len(_ai_cache)}件キャッシュ済み"
 
 
 # ------------------------------------------------------------------ Outlook操作
@@ -215,10 +249,12 @@ def classify_emails_async(emails: list, api_key: str, callback):
     def _worker():
         for email in emails:
             if email["is_customer"] is None:
-                result = classify_with_ai(
-                    email["sender"], "", email.get("body", email["preview"]), api_key
-                )
+                result = classify_with_ai(email, api_key)
                 email["is_customer"] = result
+                # 判定結果を必ずキャッシュ保存
+                key = _cache_key(email)
+                _ai_cache[key] = result
+                _save_cache()
                 callback(email)
     threading.Thread(target=_worker, daemon=True).start()
 
@@ -330,7 +366,7 @@ class OutlookCheckerAI:
     def __init__(self, root: tk.Tk):
         self.root = root
         self.root.overrideredirect(True)
-        self.root.configure(bg=C["bar_bg"])
+        self.root.configure(bg=C["bg"])
         self.root.resizable(False, False)
         self.root.attributes("-topmost", True)
 
@@ -340,11 +376,14 @@ class OutlookCheckerAI:
         self.expanded = False
         self._drag_x = 0
         self._drag_y = 0
+        self._win_x = 0
+        self._win_y = 0
+        self._compact_h = 0
         self.api_key = load_api_key()
 
         self._build_compact_bar()
-        self._build_detail_panel()
-        self._set_compact()
+        self._build_detail_panel()   # status_area + detail_panel を生成
+        self.detail_panel.pack_forget()  # カードリストは初期非表示
 
         # APIキーが未設定なら初回に確認
         if not self.api_key:
@@ -368,7 +407,7 @@ class OutlookCheckerAI:
 
     # ------------------------------------------------------------------ コンパクトバー
     def _build_compact_bar(self):
-        bar = tk.Frame(self.root, bg=C["bar_bg"], height=COMPACT_H)
+        bar = tk.Frame(self.root, bg=C["bar_bg"], height=124)
         bar.pack(fill="x")
         bar.pack_propagate(False)
 
@@ -423,25 +462,22 @@ class OutlookCheckerAI:
         self.lbl_cust.pack(anchor="center")
 
         right = tk.Frame(bar, bg=C["bar_bg"])
-        right.pack(side="right", padx=(4, 8))
+        right.pack(side="right", padx=(4, 12))
 
-        self._make_bar_btn(right, "×", C["ico_btn_fg"], "#4A1020",
-                           self._on_close).pack(side="right", padx=(2, 0))
+        self._make_bar_btn(right, "×", "#6070A0", "#4A1020",
+                           self._on_close).pack(side="right", padx=4)
         self.btn_toggle = self._make_bar_btn(right, "▼", C["accent"],
                                               C["ico_btn_hov"], self._toggle)
-        self.btn_toggle.pack(side="right", padx=2)
-        self._make_bar_btn(right, "↻", C["ico_btn_fg"], C["ico_btn_hov"],
-                           self._manual_refresh).pack(side="right", padx=2)
-        # APIキー設定ボタン
-        self._make_bar_btn(right, "🔑", C["ico_btn_fg"], C["ico_btn_hov"],
-                           self._ask_api_key).pack(side="right", padx=2)
+        self.btn_toggle.pack(side="right", padx=4)
+        self._make_bar_btn(right, "↻", "#6070A0", C["ico_btn_hov"],
+                           self._manual_refresh).pack(side="right", padx=4)
 
         self.root.after(100, lambda: _bind_drag_recursive(
             bar, self._drag_start, self._drag_move))
 
     def _make_bar_btn(self, parent, text, fg, hover_bg, command):
-        btn = tk.Label(parent, text=text, font=("Yu Gothic UI", 15),
-                        bg=C["bar_bg"], fg=fg, cursor="hand2", padx=10, pady=6)
+        btn = tk.Label(parent, text=text, font=("Segoe UI Symbol", 18),
+                        bg=C["bar_bg"], fg=fg, cursor="hand2", padx=12, pady=10)
         btn.bind("<Enter>", lambda e: btn.config(bg=hover_bg))
         btn.bind("<Leave>", lambda e: btn.config(bg=C["bar_bg"]))
         btn.bind("<Button-1>", lambda e: command())
@@ -449,21 +485,25 @@ class OutlookCheckerAI:
 
     # ------------------------------------------------------------------ 詳細パネル
     def _build_detail_panel(self):
-        self.detail_panel = tk.Frame(self.root, bg=C["bg"])
+        # ── 常時表示エリア（AIステータス＋次回更新） ──
+        self.status_area = tk.Frame(self.root, bg=C["bg"])
+        self.status_area.pack(fill="x")
 
-        # AIステータスバー
-        self.ai_bar = tk.Frame(self.detail_panel, bg="#0A2040")
-        self.ai_bar.pack(fill="x")
-        self.lbl_ai_status = tk.Label(self.ai_bar, text="",
+        ai_bar = tk.Frame(self.status_area, bg="#0A2040")
+        ai_bar.pack(fill="x")
+        self.lbl_ai_status = tk.Label(ai_bar, text="🤖 起動中…",
                                        font=("Yu Gothic UI", 9),
                                        bg="#0A2040", fg="#00C8FF")
         self.lbl_ai_status.pack(side="left", padx=16, pady=5)
 
-        sub = tk.Frame(self.detail_panel, bg=C["subheader"])
+        sub = tk.Frame(self.status_area, bg=C["subheader"])
         sub.pack(fill="x")
-        self.lbl_next = tk.Label(sub, text="", font=("Yu Gothic UI", 9),
+        self.lbl_next = tk.Label(sub, text="次回自動更新: 15分後", font=("Yu Gothic UI", 9),
                                   bg=C["subheader"], fg=C["text_muted"])
         self.lbl_next.pack(side="left", padx=16, pady=6)
+
+        # ── 展開時のみ表示エリア（カードリスト） ──
+        self.detail_panel = tk.Frame(self.root, bg=C["bg"])
 
         outer = tk.Frame(self.detail_panel, bg=C["bg"])
         outer.pack(fill="both", expand=True)
@@ -486,7 +526,7 @@ class OutlookCheckerAI:
 
         def _on_mousewheel(e):
             first, last = self.canvas.yview()
-            if last < 0.999:
+            if first > 0.001 or last < 0.999:
                 self.canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
         self._on_mousewheel = _on_mousewheel
         self.canvas.bind("<MouseWheel>", _on_mousewheel)
@@ -512,30 +552,28 @@ class OutlookCheckerAI:
         self.detail_panel.pack_forget()
         self.btn_toggle.config(text="▼")
         self.root.attributes("-topmost", True)
-        cx = self.root.winfo_x() + self.root.winfo_width() // 2
-        cy = self.root.winfo_y() + self.root.winfo_height() // 2
-        x = cx - COMPACT_W // 2
-        y = cy - COMPACT_H // 2
-        self.root.geometry(f"{COMPACT_W}x{COMPACT_H}+{x}+{y}")
         self.root.resizable(False, False)
+        self.root.update_idletasks()
+        self._compact_h = self.root.winfo_reqheight()
+        self.root.geometry(f"{COMPACT_W}x{self._compact_h}+{self._win_x}+{self._win_y}")
 
     def _set_expanded(self):
         self.expanded = True
         self.detail_panel.pack(fill="both", expand=True)
         self.btn_toggle.config(text="▲")
         self.root.attributes("-topmost", False)
-        cx = self.root.winfo_x() + COMPACT_W // 2
-        cy = self.root.winfo_y() + COMPACT_H // 2
-        x = max(0, cx - EXPAND_W // 2)
-        y = max(0, cy - EXPAND_H // 2)
-        sw = self.root.winfo_screenwidth()
-        sh = self.root.winfo_screenheight()
-        x = min(x, sw - EXPAND_W)
-        y = min(y, sh - EXPAND_H)
-        self.root.geometry(f"{EXPAND_W}x{EXPAND_H}+{x}+{y}")
         self.root.resizable(True, True)
+        self.root.update_idletasks()
+        total_h = self._compact_h + EXPAND_EXTRA_H
+        sh = self.root.winfo_screenheight()
+        y = self._win_y
+        if y + total_h > sh - 40:
+            y = sh - total_h - 40
+            self._win_y = y
+        self.root.geometry(f"{EXPAND_W}x{total_h}+{self._win_x}+{self._win_y}")
 
     def _on_close(self):
+        _save_cache()
         self.root.destroy()
 
     def _drag_start(self, event):
@@ -543,7 +581,9 @@ class OutlookCheckerAI:
         self._drag_y = event.y_root - self.root.winfo_y()
 
     def _drag_move(self, event):
-        self.root.geometry(f"+{event.x_root - self._drag_x}+{event.y_root - self._drag_y}")
+        self._win_x = event.x_root - self._drag_x
+        self._win_y = event.y_root - self._drag_y
+        self.root.geometry(f"+{self._win_x}+{self._win_y}")
 
     # ------------------------------------------------------------------ カード描画
     def _render_emails(self):
@@ -732,6 +772,12 @@ class OutlookCheckerAI:
         self.root.after(0, lambda: self._apply_update(emails))
 
     def _apply_update(self, emails):
+        # キャッシュ済みのメールは即座に復元（API再呼び出しなし）
+        for email in emails:
+            key = _cache_key(email)
+            if key in _ai_cache:
+                email["is_customer"] = _ai_cache[key]
+
         self.emails = emails
         self._update_counts()
         self._render_emails()
@@ -745,7 +791,7 @@ class OutlookCheckerAI:
             self.lbl_ai_status.config(text=f"🤖 AI判定中… {pending}件")
             classify_emails_async(emails, self.api_key, self._on_email_classified)
         else:
-            self.lbl_ai_status.config(text="🤖 AI判定完了")
+            self.lbl_ai_status.config(text=f"🤖 AI判定完了（{_cache_size_info()}）")
 
         if self._refresh_job:
             self.root.after_cancel(self._refresh_job)
@@ -774,11 +820,7 @@ class OutlookCheckerAI:
     def _manual_refresh(self):
         if self._refresh_job:
             self.root.after_cancel(self._refresh_job)
-        self._ai_cache_clear()
         self._refresh()
-
-    def _ai_cache_clear(self):
-        _ai_cache.clear()
 
 
 def main():
@@ -788,13 +830,17 @@ def main():
         print("注意: anthropic が見つかりません。pip install anthropic を実行してください。")
 
     root = tk.Tk()
+    app = OutlookCheckerAI(root)
     root.update_idletasks()
     sw = root.winfo_screenwidth()
     sh = root.winfo_screenheight()
+    h = root.winfo_reqheight()
     x = sw - COMPACT_W - 24
-    y = sh - COMPACT_H - 60
-    root.geometry(f"{COMPACT_W}x{COMPACT_H}+{x}+{y}")
-    OutlookCheckerAI(root)
+    y = sh - h - 60
+    app._win_x = x
+    app._win_y = y
+    app._compact_h = h
+    root.geometry(f"{COMPACT_W}x{h}+{x}+{y}")
     root.mainloop()
 
 
