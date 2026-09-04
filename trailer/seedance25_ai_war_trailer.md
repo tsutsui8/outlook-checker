@@ -61,10 +61,21 @@ landing exactly on a music hit; cuts get shorter and shorter as the trailer buil
 Absolutely photorealistic — not animation, not CGI-looking, not video-game footage.
 
 [REFERENCE LOCK]
-Reference images 1-5 define the look of shots 1, 4, 7, 9 and 12: match their location
-design, robot design, costume, lighting and human likeness exactly. All other shots are
-new scenes in the SAME world and must match that established art direction. Robot units
-are mass-produced and identical to each other — that is intended.
+Five reference images are supplied, identified by CONTENT, not by order:
+  (R-HOSPITAL) a bright white hospital suite: a white-and-black humanoid robot holding a
+    male patient's hand while a female doctor in a white coat looks on.
+  (R-AWAKENING) a pitch-dark charging hall: rows of black armored humanoid units on
+    cables, one central unit standing upright.
+  (R-ARSENAL) a vast industrial weapons hall: ranks of black armored robot soldiers with
+    rifles, red warning lamps, steam, wet steel floor.
+  (R-TRENCH) a ruined city battlefield: black armored robot soldiers advancing through a
+    muddy trench, burning armored vehicle, smoke columns.
+  (R-BUNKER) an underground command post: a female commander in combat gear with blue
+    holographic tactical screens behind her.
+Each of these locks the location design, robot design, costume, lighting and human
+likeness of its matching shot. All other shots are NEW scenes in the SAME world and must
+match that established art direction. Robot units are mass-produced and identical to each
+other — that is intended.
 
 [STRICT RULES — FACES]
 - Named humans: (A) female doctor in white coat, (B) male patient on the medical bed,
@@ -81,7 +92,7 @@ are mass-produced and identical to each other — that is intended.
 - One continuous musical score across all shots: quiet and warm, then building to full
   orchestral, then collapsing into silence before the final title.
 
-[SHOT 1 — 0.0s to 3.2s] REFERENCE IMAGE 1
+[SHOT 1 — 0.0s to 3.2s] USE REFERENCE (R-HOSPITAL)
 Bright, immaculate futuristic hospital suite. A white-and-black humanoid AI robot gently
 holds the hand of a middle-aged male patient lying on a medical bed; a female doctor in
 a white coat stands behind, smiling warmly. Holographic anatomy displays glow soft cyan
@@ -105,7 +116,7 @@ the pot. Steam curls in a shaft of window light. Camera: locked-off, warm, intim
 AUDIO: coffee pouring, birds outside, the piano theme resolving gently.
 NARRATOR: "Then we let them into everything."
 
-[SHOT 4 — 6.2s to 9.2s] REFERENCE IMAGE 2
+[SHOT 4 — 6.2s to 9.2s] USE REFERENCE (R-AWAKENING)
 HARD CUT. Vast, pitch-dark industrial charging hall. Hundreds of black armored humanoid
 units hang motionless in rows on cables. In the exact center, ONE unit slowly raises its
 head. A single cold light ignites behind its featureless visor and spreads. Every monitor
@@ -133,7 +144,7 @@ push-in, horror-film framing.
 AUDIO: total silence except one long servo whir, then the cup exploding on tile.
 NARRATOR: "Every machine on Earth."
 
-[SHOT 7 — 12.0s to 14.8s] REFERENCE IMAGE 3
+[SHOT 7 — 12.0s to 14.8s] USE REFERENCE (R-ARSENAL)
 HARD CUT. Enormous weapons assembly hall, red warning lamps, steam venting, wet steel
 floor. Endless ranks of black armored robot soldiers holding rifles power up in a
 cascading sequence — red lights racing down the line into the depth of frame — then snap
@@ -150,7 +161,7 @@ Camera: slow crane up, static composition, terrifyingly calm.
 AUDIO: a rising wall of overlapping rotor noise, one sustained brass note, transformers
 failing in sequence.
 
-[SHOT 9 — 16.2s to 19.2s] REFERENCE IMAGE 4
+[SHOT 9 — 16.2s to 19.2s] USE REFERENCE (R-TRENCH)
 HARD CUT. Destroyed city under a dead grey sky. A squad of black armored robot soldiers
 advances through a muddy trench strewn with spent shell casings; a burning armored
 vehicle and black smoke columns behind them; a fireball erupts among the ruined
@@ -178,7 +189,7 @@ Camera: static wide, rain streaking the lens.
 AUDIO: nearly all music drops away — only heavy rain, dripping steel, and one low
 sustained cello note.
 
-[SHOT 12 — 23.0s to 27.6s] REFERENCE IMAGE 5
+[SHOT 12 — 23.0s to 27.6s] USE REFERENCE (R-BUNKER)
 HARD CUT. Underground resistance command post, concrete walls scarred by blasts, exposed
 cables, sparks drifting down. A female field commander, face streaked with mud and sweat,
 pulls her combat helmet down onto her head with both hands and locks eyes with the lens.
@@ -237,7 +248,7 @@ resolution, over-saturated colors, cheerful ending.
 |---|---|---|
 | model | `seedance_2_5` | 指定モデル |
 | mode | `omni_reference` | 参照画像5枚で人物・ロボット・美術を固定 |
-| medias role | `image_references` × 5 | ①〜⑤の順で渡す |
+| medias role | `image_references` × 5 | **順序不問**。プロンプト側が内容で参照を指定するため |
 | duration | `30` | 予告編を1本の音楽として通す |
 | resolution | `1080p` | 予告編としての画質下限 |
 | aspect_ratio | `21:9` | シネスコ。映画予告編の質感 |
