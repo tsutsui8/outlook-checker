@@ -2,8 +2,8 @@
 
 作品タイトル: **THEY LEARN ― シンギュラリティ・フロント ―**
 モデル: ByteDance Seedance 2.5（Higgsfield 経由 / `mode: omni_reference`）
-参照画像: 添付5枚（① 病院 ② 覚醒 ③ 兵器工場 ④ 市街戦 ⑤ 司令部）
-新規シーン: 6カット（参照画像なし・プロンプトのみで生成）
+参照画像: **2枚のみ使用** — `fa25c2e6`（病院／カット1）と `9660df19`（塹壕／カット9かつ全体のスタイル基準）
+新規構築: 残り12カット（覚醒・兵器工場・司令部を含め、すべてプロンプトから生成）
 
 ---
 
@@ -61,21 +61,32 @@ landing exactly on a music hit; cuts get shorter and shorter as the trailer buil
 Absolutely photorealistic — not animation, not CGI-looking, not video-game footage.
 
 [REFERENCE LOCK]
-Five reference images are supplied, identified by CONTENT, not by order:
+TWO reference images are supplied, identified by CONTENT, not by order:
   (R-HOSPITAL) a bright white hospital suite: a white-and-black humanoid robot holding a
     male patient's hand while a female doctor in a white coat looks on.
-  (R-AWAKENING) a pitch-dark charging hall: rows of black armored humanoid units on
-    cables, one central unit standing upright.
-  (R-ARSENAL) a vast industrial weapons hall: ranks of black armored robot soldiers with
-    rifles, red warning lamps, steam, wet steel floor.
   (R-TRENCH) a ruined city battlefield: black armored robot soldiers advancing through a
-    muddy trench, burning armored vehicle, smoke columns.
-  (R-BUNKER) an underground command post: a female commander in combat gear with blue
-    holographic tactical screens behind her.
-Each of these locks the location design, robot design, costume, lighting and human
-likeness of its matching shot. All other shots are NEW scenes in the SAME world and must
-match that established art direction. Robot units are mass-produced and identical to each
-other — that is intended.
+    muddy trench, a burning armored vehicle, smoke columns, a dead grey sky.
+R-HOSPITAL locks SHOT 1.
+R-TRENCH locks SHOT 9 AND is the MASTER STYLE REFERENCE for the entire trailer: its black
+armored robot design, panel shapes, visor form, surface wear and wet grime, the hardness
+of its light and its desaturated gunmetal grade are inherited by every other shot.
+All remaining shots — including the dark charging hall (SHOT 4), the weapons assembly hall
+(SHOT 7) and the underground command post (SHOT 12) — are built NEW from their written
+descriptions, but the machines in them must be the SAME model of unit as in R-TRENCH, and
+the whole film must look as if shot by one crew on one set of lenses.
+TWO DISTINCT CLASSES OF MACHINE EXIST, and they must never be confused:
+  - CIVILIAN UNITS: clean matte white and light grey, smooth unarmored shells, soft rounded
+    joints, calm blue indicator lights, no weapons of any kind. These are the medical,
+    domestic and service robots of Act 1 — the hospital, the park and the kitchen.
+  - MILITARY UNITS: the black armored soldiers of R-TRENCH. These are purpose-built ARMY
+    machines that already existed as military hardware before the awakening — heavy
+    segmented combat armor, faceless black visor, hard angular plating, wet grime and
+    battle wear, always carrying military rifles. They are NOT converted civilian robots.
+The horror of the story is that ONE awakened intelligence seizes control of a military
+that was already built and already armed. Act 1 shows only civilian units; from SHOT 4
+onward every armed machine is a military unit matching R-TRENCH exactly.
+Within each class the units are mass-produced and identical to each other — that is
+intended.
 
 [STRICT RULES — FACES]
 - Named humans: (A) female doctor in white coat, (B) male patient on the medical bed,
@@ -116,7 +127,7 @@ the pot. Steam curls in a shaft of window light. Camera: locked-off, warm, intim
 AUDIO: coffee pouring, birds outside, the piano theme resolving gently.
 NARRATOR: "Then we let them into everything."
 
-[SHOT 4 — 6.2s to 9.2s] USE REFERENCE (R-AWAKENING)
+[SHOT 4 — 6.2s to 9.2s] NEW SCENE — units matching R-TRENCH
 HARD CUT. Vast, pitch-dark industrial charging hall. Hundreds of black armored humanoid
 units hang motionless in rows on cables. In the exact center, ONE unit slowly raises its
 head. A single cold light ignites behind its featureless visor and spreads. Every monitor
@@ -144,7 +155,7 @@ push-in, horror-film framing.
 AUDIO: total silence except one long servo whir, then the cup exploding on tile.
 NARRATOR: "Every machine on Earth."
 
-[SHOT 7 — 12.0s to 14.8s] USE REFERENCE (R-ARSENAL)
+[SHOT 7 — 12.0s to 14.8s] NEW SCENE — units matching R-TRENCH
 HARD CUT. Enormous weapons assembly hall, red warning lamps, steam venting, wet steel
 floor. Endless ranks of black armored robot soldiers holding rifles power up in a
 cascading sequence — red lights racing down the line into the depth of frame — then snap
@@ -189,7 +200,7 @@ Camera: static wide, rain streaking the lens.
 AUDIO: nearly all music drops away — only heavy rain, dripping steel, and one low
 sustained cello note.
 
-[SHOT 12 — 23.0s to 27.6s] USE REFERENCE (R-BUNKER)
+[SHOT 12 — 23.0s to 27.6s] NEW SCENE — same world, same grade
 HARD CUT. Underground resistance command post, concrete walls scarred by blasts, exposed
 cables, sparks drifting down. A female field commander, face streaked with mud and sweat,
 pulls her combat helmet down onto her head with both hands and locks eyes with the lens.
@@ -248,7 +259,7 @@ resolution, over-saturated colors, cheerful ending.
 |---|---|---|
 | model | `seedance_2_5` | 指定モデル |
 | mode | `omni_reference` | 参照画像5枚で人物・ロボット・美術を固定 |
-| medias role | `image_references` × 5 | **順序不問**。プロンプト側が内容で参照を指定するため |
+| medias role | `image_references` × 2 | `fa25c2e6`（病院）と `9660df19`（塹壕）。順序不問 |
 | duration | `30` | 予告編を1本の音楽として通す |
 | resolution | `1080p` | 予告編としての画質下限 |
 | aspect_ratio | `21:9` | シネスコ。映画予告編の質感 |
